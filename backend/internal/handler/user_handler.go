@@ -18,12 +18,7 @@ func NewUserHandler(users repository.UserRepository) *UserHandler {
 	return &UserHandler{users: users}
 }
 
-// List returns tenant-scoped users, optionally filtered by ?role=. Its
-// primary purpose is technician discovery for issue assignment — not
-// general user management, which was explicitly deferred. Password hashes
-// are stripped from the response; nothing else about a user is sensitive
-// enough to warrant a separate response DTO at this scale, but the hash
-// specifically must never leave the server.
+// List returns tenant-scoped users, optionally filtered by ?role=.
 func (h *UserHandler) List(c *gin.Context) {
 	tenantID, _ := middleware.TenantIDFromContext(c)
 

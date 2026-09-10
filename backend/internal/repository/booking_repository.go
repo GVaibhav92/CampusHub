@@ -12,9 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// ErrBookingConflict is returned when the exclusion constraint rejects an
-// overlapping booking. The service layer maps this to a 409, never a 500 —
-// a conflict is an expected outcome, not a server failure.
 var ErrBookingConflict = errors.New("booking conflicts with an existing reservation")
 
 const exclusionViolationCode = "23P01"

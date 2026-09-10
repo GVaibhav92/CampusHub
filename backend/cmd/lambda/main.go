@@ -16,11 +16,6 @@ import (
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 )
 
-// Package-level: created ONCE per Lambda execution environment in init(),
-// reused across every warm invocation. This is the literal implementation
-// of "pool created outside the handler" from the connection-exhaustion
-// mitigation — not deployed until Week 3, but written now so nothing needs
-// restructuring when it is.
 var (
 	ginLambda *ginadapter.GinLambda
 	log       *slog.Logger

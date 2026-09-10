@@ -14,11 +14,7 @@ type localClaims struct {
 	jwt.RegisteredClaims
 }
 
-// TokenIssuer is a stand-in for Cognito during local development. It is
-// deleted, not modified, in Week 3 — replaced by JWKS signature validation
-// against Cognito's public keys. Nothing downstream changes: every other
-// piece of the pipeline only ever consumes `sub`, never trusts a claim it
-// issued itself, so the swap is a one-file change.
+// TokenIssuer is a stand-in for Cognito during local development.
 type TokenIssuer struct {
 	secret []byte
 	ttl    time.Duration
@@ -42,9 +38,7 @@ func (i *TokenIssuer) Issue(sub string) (string, error) {
 
 const ctxKeySub = "auth_sub"
 
-// RequireAuth validates the bearer token and stores only `sub` in context.
-// It deliberately does NOT resolve tenant_id or role — that's the tenant
-// middleware's single responsibility, kept separate on purpose.
+// validates the bearer token and stores only `sub` in context.
 func RequireAuth(issuer *TokenIssuer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")

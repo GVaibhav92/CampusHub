@@ -39,11 +39,6 @@ func (r *resourceRepository) Create(ctx context.Context, res *domain.Resource) e
 	return nil
 }
 
-// GetByID always filters by tenant_id in the WHERE clause, never as a
-// post-fetch check. This is the pattern every tenant-scoped query in the
-// project follows — a row belonging to another tenant simply doesn't
-// exist as far as this query is concerned, so a wrong tenant_id returns
-// "not found," not "found but rejected."
 func (r *resourceRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Resource, error) {
 	var res domain.Resource
 	query := `SELECT id, tenant_id, name, type, capacity, location, status, created_at
@@ -106,10 +101,6 @@ func (r *resourceRepository) Delete(ctx context.Context, tenantID, id uuid.UUID)
 	return nil
 }
 
-// HasActiveBookings guards deletion. Without this, deleting a resource
-// would cascade-delete its bookings (ON DELETE CASCADE on bookings.resource_id),
-// silently destroying booking history. Checked explicitly instead so the
-// handler can return a clear 409 rather than a surprising cascade.
 func (r *resourceRepository) HasActiveBookings(ctx context.Context, tenantID, id uuid.UUID) (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS(
