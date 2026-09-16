@@ -9,55 +9,25 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type localClaims struct {
-	Sub string `json:"sub"`
-	jwt.RegisteredClaims
-}
-
-// TokenIssuer is a stand-in for Cognito during local development.
-type TokenIssuer struct {
-	secret []byte
-	ttl    time.Duration
-}
-
-func NewTokenIssuer(secret string, ttl time.Duration) *TokenIssuer {
-	return &TokenIssuer{secret: []byte(secret), ttl: ttl}
-}
-
-func (i *TokenIssuer) Issue(sub string) (string, error) {
-	claims := localClaims{
-		Sub: sub,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(i.ttl)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(i.secret)
+type TokenValidator interface {
+	Validate(tokenString string) (sub string, err error)
 }
 
 const ctxKeySub = "auth_sub"
 
-// validates the bearer token and stores only `sub` in context.
-func RequireAuth(issuer *TokenIssuer) gin.HandlerFunc {
+func RequireAuth(validator TokenValidator) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
 			return
 		}
-		tokenString := strings.TrimPrefix(header, "Bearer ")
-
-		claims := &localClaims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-			return issuer.secret, nil
-		})
-		if err != nil || !token.Valid {
+		sub, err := validator.Validate(strings.TrimPrefix(header, "Bearer "))
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
-
-		c.Set(ctxKeySub, claims.Sub)
+		c.Set(ctxKeySub, sub)
 		c.Next()
 	}
 }
@@ -69,4 +39,48 @@ func SubFromContext(c *gin.Context) (string, bool) {
 	}
 	s, ok := v.(string)
 	return s, ok
+}
+
+type localClaims struct {
+	Sub string `json:"sub"`
+	jwt.RegisteredClaims
+}
+
+type LocalTokenIssuer struct {
+	secret []byte
+	ttl    time.Duration
+}
+
+func NewLocalTokenIssuer(secret string, ttl time.Duration) *LocalTokenIssuer {
+	return &LocalTokenIssuer{secret: []byte(secret), ttl: ttl}
+}
+
+func (i *LocalTokenIssuer) Issue(sub string) (string, error) {
+	claims := localClaims{
+		Sub: sub,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(i.ttl)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(i.secret)
+}
+
+type LocalTokenValidator struct {
+	secret []byte
+}
+
+func NewLocalTokenValidator(secret string) *LocalTokenValidator {
+	return &LocalTokenValidator{secret: []byte(secret)}
+}
+
+func (v *LocalTokenValidator) Validate(tokenString string) (string, error) {
+	claims := &localClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return v.secret, nil
+	})
+	if err != nil || !token.Valid {
+		return "", err
+	}
+	return claims.Sub, nil
 }
