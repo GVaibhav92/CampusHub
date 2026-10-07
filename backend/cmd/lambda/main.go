@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"campushub/backend/internal/auth"
+	"campushub/backend/internal/cloud"
 	"campushub/backend/internal/database"
 	applogger "campushub/backend/internal/logger"
 	"campushub/backend/internal/middleware"
@@ -18,6 +19,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -25,7 +27,7 @@ import (
 )
 
 var (
-	ginLambda *ginadapter.GinLambda
+	ginLambda *ginadapter.GinLambdaV2
 	log       *slog.Logger
 )
 
@@ -87,11 +89,16 @@ func init() {
 		os.Exit(1)
 	}
 
-	engine := router.New(router.Dependencies{DB: db, Logger: log, AuthProvider: provider, TokenValidator: validator})
-	ginLambda = ginadapter.New(engine)
+	queueURL := os.Getenv("SQS_QUEUE_URL")
+	publisher := cloud.NewEventPublisher(sqs.NewFromConfig(awsCfg), queueURL)
+
+	engine := router.New(router.Dependencies{
+		DB: db, Logger: log, AuthProvider: provider, TokenValidator: validator, Publisher: publisher,
+	})
+	ginLambda = ginadapter.NewV2(engine)
 }
 
-func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	return ginLambda.ProxyWithContext(ctx, req)
 }
 

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"campushub/backend/internal/auth"
+	"campushub/backend/internal/cloud"
 	"campushub/backend/internal/domain"
 	"campushub/backend/internal/handler"
 	"campushub/backend/internal/middleware"
@@ -19,6 +20,7 @@ type Dependencies struct {
 	Logger         *slog.Logger
 	AuthProvider   auth.Provider
 	TokenValidator middleware.TokenValidator
+	Publisher      *cloud.EventPublisher
 }
 
 func New(deps Dependencies) *gin.Engine {
@@ -27,20 +29,21 @@ func New(deps Dependencies) *gin.Engine {
 	resourceRepo := repository.NewResourceRepository(deps.DB)
 	bookingRepo := repository.NewBookingRepository(deps.DB)
 	issueRepo := repository.NewIssueRepository(deps.DB)
-	bookingSvc := service.NewBookingService(deps.DB, bookingRepo, resourceRepo)
+	bookingSvc := service.NewBookingService(deps.DB, bookingRepo, resourceRepo, deps.Publisher, deps.Logger)
 
 	healthHandler := handler.NewHealthHandler(deps.DB)
 	tenantHandler := handler.NewTenantHandler(tenantRepo)
 	authHandler := handler.NewAuthHandler(userRepo, tenantRepo, deps.AuthProvider)
 	resourceHandler := handler.NewResourceHandler(resourceRepo)
 	bookingHandler := handler.NewBookingHandler(bookingSvc, bookingRepo)
-	issueHandler := handler.NewIssueHandler(issueRepo, resourceRepo)
+	issueHandler := handler.NewIssueHandler(issueRepo, resourceRepo, deps.Publisher, deps.Logger)
 	userHandler := handler.NewUserHandler(userRepo)
 
 	r := gin.New()
-	r.Use(gin.Recovery(), middleware.RequestLogger(deps.Logger))
+	r.Use(gin.Recovery(), middleware.RequestLogger(deps.Logger), middleware.CORS())
 
 	r.GET("/health", healthHandler.Check)
+	r.GET("/tenants", tenantHandler.List)
 	r.POST("/tenants", tenantHandler.Create)
 	r.POST("/auth/register", authHandler.Register)
 	r.POST("/auth/login", authHandler.Login)

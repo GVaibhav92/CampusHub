@@ -14,6 +14,7 @@ type TenantRepository interface {
 	Create(ctx context.Context, t *domain.Tenant) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error)
 	GetBySlug(ctx context.Context, slug string) (*domain.Tenant, error)
+	List(ctx context.Context) ([]domain.Tenant, error)
 }
 
 type tenantRepository struct {
@@ -56,4 +57,23 @@ func (r *tenantRepository) GetBySlug(ctx context.Context, slug string) (*domain.
 		return nil, fmt.Errorf("getting tenant by slug: %w", err)
 	}
 	return &t, nil
+}
+
+func (r *tenantRepository) List(ctx context.Context) ([]domain.Tenant, error) {
+	query := `SELECT id, name, slug, created_at FROM tenants ORDER BY name ASC`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("listing tenants: %w", err)
+	}
+	defer rows.Close()
+
+	var tenants []domain.Tenant
+	for rows.Next() {
+		var t domain.Tenant
+		if err := rows.Scan(&t.ID, &t.Name, &t.Slug, &t.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scanning tenant: %w", err)
+		}
+		tenants = append(tenants, t)
+	}
+	return tenants, rows.Err()
 }

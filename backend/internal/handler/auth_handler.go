@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"campushub/backend/internal/auth"
@@ -25,7 +26,7 @@ type registerRequest struct {
 	TenantSlug string `json:"tenant_slug" binding:"required"`
 	Email      string `json:"email" binding:"required,email"`
 	Password   string `json:"password" binding:"required,min=8"`
-	Role       string `json:"role" binding:"required"`
+	Role       string `json:"role"` // optional: defaults to STUDENT, only STUDENT or FACULTY allowed
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -34,7 +35,19 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	// Enforce registration role allow-list
+	assignedRole := domain.RoleStudent
+	if req.Role != "" {
+		switch domain.Role(req.Role) {
+		case domain.RoleStudent:
+			assignedRole = domain.RoleStudent
+		case domain.RoleFaculty:
+			assignedRole = domain.RoleFaculty
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid registration role: only STUDENT or FACULTY are permitted"})
+			return
+		}
+	}
 	tenant, err := h.tenants.GetBySlug(c.Request.Context(), req.TenantSlug)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve tenant"})
@@ -47,13 +60,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	sub, storedHash, err := h.provider.SignUp(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
+		log.Printf("REGISTER IDENTITY ERROR: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create identity"})
 		return
 	}
 
 	user := &domain.User{
 		ID: uuid.New(), TenantID: tenant.ID, CognitoSub: sub,
-		Email: req.Email, PasswordHash: storedHash, Role: domain.Role(req.Role),
+		Email: req.Email, PasswordHash: storedHash, Role: assignedRole,
 	}
 	if err := h.users.Create(c.Request.Context(), user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})

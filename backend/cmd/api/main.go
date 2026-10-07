@@ -34,7 +34,7 @@ func main() {
 	validator := middleware.NewLocalTokenValidator(cfg.JWTSecret)
 	provider := auth.NewLocalProvider(userRepo, issuer)
 
-	engine := router.New(router.Dependencies{DB: db, Logger: log, AuthProvider: provider, TokenValidator: validator})
+	engine := router.New(router.Dependencies{DB: db, Logger: log, AuthProvider: provider, TokenValidator: validator, Publisher: nil})
 
 	log.Info("starting local server", "port", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, engine); err != nil {

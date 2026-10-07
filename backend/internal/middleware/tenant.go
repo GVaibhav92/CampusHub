@@ -14,6 +14,7 @@ const (
 	ctxKeyTenantID = "tenant_id"
 	ctxKeyRole     = "role"
 	ctxKeyUserID   = "user_id"
+	ctxKeyEmail    = "email"
 )
 
 func RequireTenant(users repository.UserRepository) gin.HandlerFunc {
@@ -37,6 +38,7 @@ func RequireTenant(users repository.UserRepository) gin.HandlerFunc {
 		c.Set(ctxKeyTenantID, user.TenantID)
 		c.Set(ctxKeyRole, user.Role)
 		c.Set(ctxKeyUserID, user.ID)
+		c.Set(ctxKeyEmail, user.Email)
 		c.Next()
 	}
 }
@@ -66,4 +68,12 @@ func UserIDFromContext(c *gin.Context) (uuid.UUID, bool) {
 	}
 	id, ok := v.(uuid.UUID)
 	return id, ok
+}
+func EmailFromContext(c *gin.Context) (string, bool) {
+	v, ok := c.Get(ctxKeyEmail)
+	if !ok {
+		return "", false
+	}
+	email, ok := v.(string)
+	return email, ok
 }

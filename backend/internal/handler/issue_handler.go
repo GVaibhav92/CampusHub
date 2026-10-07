@@ -2,8 +2,11 @@ package handler
 
 import (
 	"database/sql"
+	"fmt"
+	"log/slog"
 	"net/http"
 
+	"campushub/backend/internal/cloud"
 	"campushub/backend/internal/domain"
 	"campushub/backend/internal/middleware"
 	"campushub/backend/internal/repository"
@@ -15,10 +18,13 @@ import (
 type IssueHandler struct {
 	issues    repository.IssueRepository
 	resources repository.ResourceRepository
+	publisher *cloud.EventPublisher
+	logger    *slog.Logger
 }
 
-func NewIssueHandler(issues repository.IssueRepository, resources repository.ResourceRepository) *IssueHandler {
-	return &IssueHandler{issues: issues, resources: resources}
+func NewIssueHandler(issues repository.IssueRepository, resources repository.ResourceRepository, publisher *cloud.EventPublisher,
+	logger *slog.Logger) *IssueHandler {
+	return &IssueHandler{issues: issues, resources: resources, publisher: publisher, logger: logger}
 }
 
 // validTransitions is the entire status-transition business rule.
@@ -83,6 +89,15 @@ func (h *IssueHandler) Create(c *gin.Context) {
 	if err := h.issues.Create(c.Request.Context(), issue); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create issue"})
 		return
+	}
+	if h.publisher != nil {
+		event := cloud.NotificationEvent{
+			Subject: "New Maintenance Issue Reported",
+			Message: fmt.Sprintf("Issue reported for %q: %s (priority: %s, category: %s).", resource.Name, req.Description, priority, req.Category),
+		}
+		if err := h.publisher.Publish(c.Request.Context(), event); err != nil {
+			h.logger.Error("failed to publish issue event", "error", err, "issue_id", issue.ID)
+		}
 	}
 	c.JSON(http.StatusCreated, issue)
 }
