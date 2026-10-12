@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { AuthProvider } from './context/AuthContext'
 import { ResourceProvider } from './context/ResourceContext'
 import { useAuth } from './hooks/useAuth'
@@ -16,8 +17,7 @@ import { Issues } from './pages/Issues'
 import { CreateIssue } from './pages/CreateIssue'
 import { IssueDetails } from './pages/IssueDetails'
 import { Users } from './pages/Users'
-
-
+import { NotFound } from './pages/NotFound'
 
 function AuthenticatedApp() {
   const { user, logout } = useAuth()
@@ -34,6 +34,7 @@ function AuthenticatedApp() {
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" richColors closeButton />
       <BrowserRouter>
         <Routes>
           {/* Public Auth Routes */}
@@ -68,22 +69,14 @@ export default function App() {
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-
-
-            <Route
-              path="*"
-              element={
-                <div className="p-8 text-center text-slate-500">
-                  <h3 className="text-lg font-semibold text-slate-800">Coming Soon</h3>
-                  <p className="text-sm mt-1">This section will be available in the next phase.</p>
-                </div>
-              }
-            />
+            {/* In-app fallback */}
+            <Route path="*" element={<NotFound />} />
           </Route>
+
+          {/* Root/Global fallback */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   )
 }
-
-

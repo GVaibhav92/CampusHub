@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ func TestBookingOwnershipAndTenantIsolation(t *testing.T) {
 	userRepo := repository.NewUserRepository(db)
 	resourceRepo := repository.NewResourceRepository(db)
 	bookingRepo := repository.NewBookingRepository(db)
-	bookingSvc := service.NewBookingService(db, bookingRepo, resourceRepo)
+	bookingSvc := service.NewBookingService(db, bookingRepo, resourceRepo, nil, slog.Default())
 
 	tenantA := &domain.Tenant{ID: uuid.New(), Name: "VIT", Slug: "vit-" + uuid.NewString()[:8]}
 	tenantB := &domain.Tenant{ID: uuid.New(), Name: "SRM", Slug: "srm-" + uuid.NewString()[:8]}

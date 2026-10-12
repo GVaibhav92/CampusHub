@@ -53,11 +53,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
   ]
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 min-h-screen">
+    <aside className="hidden lg:flex w-64 bg-white border-r border-slate-200 flex-col shrink-0 min-h-screen">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 border-b border-slate-100 gap-3">
         <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs">
-          <Building2 className="w-5 h-5" />
+          <Building2 className="w-5 h-5" aria-hidden="true" />
         </div>
         <div>
           <span className="font-bold text-slate-900 tracking-tight text-lg">CampusHub</span>
@@ -83,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
                 }`
               }
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
               {item.label}
             </NavLink>
           )
@@ -95,8 +95,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
         <button
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+          aria-label="Sign out"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4" aria-hidden="true" />
           Sign Out
         </button>
       </div>
