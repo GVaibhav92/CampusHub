@@ -15,6 +15,7 @@ type UserRepository interface {
 	GetByCognitoSub(ctx context.Context, sub string) (*domain.User, error)
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 	List(ctx context.Context, tenantID uuid.UUID, role *domain.Role) ([]domain.User, error)
+	UpdateRole(ctx context.Context, email string, role domain.Role) error
 }
 
 type userRepository struct {
@@ -94,4 +95,20 @@ func (r *userRepository) List(ctx context.Context, tenantID uuid.UUID, role *dom
 		users = append(users, u)
 	}
 	return users, rows.Err()
+}
+
+func (r *userRepository) UpdateRole(ctx context.Context, email string, role domain.Role) error {
+	query := `UPDATE users SET role = $1 WHERE email = $2`
+	result, err := r.db.ExecContext(ctx, query, role, email)
+	if err != nil {
+		return fmt.Errorf("updating user role: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting affected rows: %w", err)
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

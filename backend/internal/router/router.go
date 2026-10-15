@@ -47,6 +47,7 @@ func New(deps Dependencies) *gin.Engine {
 	r.POST("/tenants", tenantHandler.Create)
 	r.POST("/auth/register", authHandler.Register)
 	r.POST("/auth/login", authHandler.Login)
+	r.POST("/admin/promote-user", authHandler.PromoteUser)
 
 	protected := r.Group("/")
 	protected.Use(middleware.RequireAuth(deps.TokenValidator), middleware.RequireTenant(userRepo))

@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"campushub/backend/internal/auth"
 	"campushub/backend/internal/domain"
@@ -94,3 +95,55 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
+
+type promoteUserRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	Role  string `json:"role" binding:"required"`
+}
+
+// PromoteUser allows bootstrapping/promoting users to ADMIN or TECHNICIAN using the provisioning key.
+func (h *AuthHandler) PromoteUser(c *gin.Context) {
+	expectedKey := "campushub-bootstrap-secret"
+	if envKey := os.Getenv("TENANT_PROVISIONING_KEY"); envKey != "" {
+		expectedKey = envKey
+	}
+
+	providedKey := c.GetHeader("X-Tenant-Provisioning-Key")
+	if providedKey != expectedKey {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized provisioning request"})
+		return
+	}
+
+	var req promoteUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var targetRole domain.Role
+	switch domain.Role(req.Role) {
+	case domain.RoleAdmin:
+		targetRole = domain.RoleAdmin
+	case domain.RoleTechnician:
+		targetRole = domain.RoleTechnician
+	case domain.RoleFaculty:
+		targetRole = domain.RoleFaculty
+	case domain.RoleStudent:
+		targetRole = domain.RoleStudent
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role: must be ADMIN, TECHNICIAN, FACULTY, or STUDENT"})
+		return
+	}
+
+	if err := h.users.UpdateRole(c.Request.Context(), req.Email, targetRole); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user role: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "user role updated successfully",
+		"email":   req.Email,
+		"role":    targetRole,
+	})
+}
+
