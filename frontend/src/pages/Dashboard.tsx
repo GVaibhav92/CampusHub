@@ -20,7 +20,7 @@ import { Link } from 'react-router-dom'
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth()
-  const { resources, getResourceById, isLoading: isLoadingResources } = useResources()
+  const { resources = [], getResourceById, isLoading: isLoadingResources } = useResources()
 
   const [bookings, setBookings] = useState<Booking[]>([])
   const [issues, setIssues] = useState<Issue[]>([])
@@ -40,11 +40,15 @@ export const Dashboard: React.FC = () => {
         ])
 
         if (isMounted) {
-          setBookings(bookingsData)
-          setIssues(issuesData)
+          setBookings(Array.isArray(bookingsData) ? bookingsData : [])
+          setIssues(Array.isArray(issuesData) ? issuesData : [])
         }
       } catch (err) {
         console.warn('Dashboard data fetch error:', err)
+        if (isMounted) {
+          setBookings([])
+          setIssues([])
+        }
       } finally {
         if (isMounted) {
           setIsLoadingData(false)
@@ -63,23 +67,28 @@ export const Dashboard: React.FC = () => {
 
   if (!user) return null
 
+  // Ensure safe arrays in case of null responses from fresh databases
+  const safeBookings = Array.isArray(bookings) ? bookings : []
+  const safeIssues = Array.isArray(issues) ? issues : []
+  const safeResources = Array.isArray(resources) ? resources : []
+
   // Derived metrics
-  const activeBookings = bookings.filter((b) => b.Status === 'CONFIRMED')
+  const activeBookings = safeBookings.filter((b) => b?.Status === 'CONFIRMED')
   const upcomingBookings = activeBookings
-    .filter((b) => new Date(b.EndTime) >= new Date())
+    .filter((b) => b?.EndTime && new Date(b.EndTime) >= new Date())
     .slice(0, 3)
 
-  const openIssues = issues.filter((i) => i.Status === 'OPEN' || i.Status === 'IN_PROGRESS')
-  const recentIssues = issues.slice(0, 3)
+  const openIssues = safeIssues.filter((i) => i?.Status === 'OPEN' || i?.Status === 'IN_PROGRESS')
+  const recentIssues = safeIssues.slice(0, 3)
 
-  const availableResourcesCount = resources.filter((r) => r.Status === 'AVAILABLE').length
+  const availableResourcesCount = safeResources.filter((r) => r?.Status === 'AVAILABLE').length
 
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Good day, {user.email.split('@')[0]} 👋
+          Good day, {user.email ? user.email.split('@')[0] : 'User'} ??
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Campus facility summary and real-time activity
@@ -102,7 +111,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-4 flex items-baseline justify-between">
             <span className="text-3xl font-extrabold text-slate-900">
-              {resources.length}
+              {safeResources.length}
             </span>
             <span className="text-xs text-indigo-600 font-semibold flex items-center gap-0.5">
               Browse <ArrowUpRight className="w-3.5 h-3.5" />
@@ -159,7 +168,7 @@ export const Dashboard: React.FC = () => {
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            {issues.length - openIssues.length} resolved or closed
+            {safeIssues.length - openIssues.length} resolved or closed
           </p>
         </Link>
       </div>
@@ -281,4 +290,3 @@ export const Dashboard: React.FC = () => {
     </div>
   )
 }
-

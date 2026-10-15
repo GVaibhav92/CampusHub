@@ -12,8 +12,9 @@ export function useBookings(isAll: boolean = false) {
     setError(null)
     try {
       const data = isAll ? await getAllBookings() : await getMyBookings()
-      setBookings(data)
+      setBookings(Array.isArray(data) ? data : [])
     } catch (err: unknown) {
+      setBookings([])
       if (err instanceof Error) {
         setError(err.message)
       } else {
@@ -30,14 +31,13 @@ export function useBookings(isAll: boolean = false) {
 
   const cancel = async (id: string) => {
     await apiCancelBooking(id)
-    // Update local state by marking the booking CANCELLED
     setBookings((prev) =>
-      prev.map((b) => (b.ID === id ? { ...b, Status: 'CANCELLED' } : b))
+      Array.isArray(prev) ? prev.map((b) => (b.ID === id ? { ...b, Status: 'CANCELLED' } : b)) : []
     )
   }
 
   return {
-    bookings,
+    bookings: Array.isArray(bookings) ? bookings : [],
     isLoading,
     error,
     refresh: fetchBookings,

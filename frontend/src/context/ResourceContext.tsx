@@ -36,8 +36,9 @@ export const ResourceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null)
     try {
       const data = await getResources()
-      setResources(data)
+      setResources(Array.isArray(data) ? data : [])
     } catch (err: unknown) {
+      setResources([])
       if (err instanceof Error) {
         setError(err.message)
       } else {
@@ -58,8 +59,11 @@ export const ResourceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const resourceMap = useMemo(() => {
     const map = new Map<string, Resource>()
-    for (const r of resources) {
-      map.set(r.ID, r)
+    const safeList = Array.isArray(resources) ? resources : []
+    for (const r of safeList) {
+      if (r && r.ID) {
+        map.set(r.ID, r)
+      }
     }
     return map
   }, [resources])
@@ -71,25 +75,25 @@ export const ResourceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addResource = async (payload: CreateResourcePayload) => {
     const created = await createResource(payload)
-    setResources((prev) => [created, ...prev])
+    setResources((prev) => [created, ...(Array.isArray(prev) ? prev : [])])
     return created
   }
 
   const editResource = async (id: string, payload: UpdateResourcePayload) => {
     const updated = await updateResource(id, payload)
-    setResources((prev) => prev.map((r) => (r.ID === id ? updated : r)))
+    setResources((prev) => (Array.isArray(prev) ? prev.map((r) => (r.ID === id ? updated : r)) : [updated]))
     return updated
   }
 
   const removeResource = async (id: string) => {
     await deleteResource(id)
-    setResources((prev) => prev.filter((r) => r.ID !== id))
+    setResources((prev) => (Array.isArray(prev) ? prev.filter((r) => r.ID !== id) : []))
   }
 
   return (
     <ResourceContext.Provider
       value={{
-        resources,
+        resources: Array.isArray(resources) ? resources : [],
         resourceMap,
         isLoading,
         error,

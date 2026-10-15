@@ -12,8 +12,9 @@ export function useIssues(isAll: boolean = false) {
     setError(null)
     try {
       const data = isAll ? await getAllIssues() : await getMyIssues()
-      setIssues(data)
+      setIssues(Array.isArray(data) ? data : [])
     } catch (err: unknown) {
+      setIssues([])
       if (err instanceof Error) {
         setError(err.message)
       } else {
@@ -30,12 +31,14 @@ export function useIssues(isAll: boolean = false) {
 
   const changeStatus = async (id: string, newStatus: IssueStatus, assignedTo?: string) => {
     const updated = await apiUpdateStatus(id, { status: newStatus, assigned_to: assignedTo })
-    setIssues((prev) => prev.map((item) => (item.ID === id ? updated : item)))
+    setIssues((prev) =>
+      Array.isArray(prev) ? prev.map((item) => (item.ID === id ? updated : item)) : [updated]
+    )
     return updated
   }
 
   return {
-    issues,
+    issues: Array.isArray(issues) ? issues : [],
     isLoading,
     error,
     refresh: fetchIssues,
