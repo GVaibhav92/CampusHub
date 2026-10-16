@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Box,
   CalendarCheck,
+  CalendarDays,
   AlertTriangle,
   Users,
   LogOut,
@@ -21,15 +22,18 @@ interface MobileNavProps {
 export function MobileNav({ role, onLogout, onClose }: MobileNavProps) {
   const isStaff = role === 'ADMIN' || role === 'TECHNICIAN'
   const isAdmin = role === 'ADMIN'
+  const isStudent = role === 'STUDENT'
+  const isFaculty = role === 'FACULTY'
 
   const navItems = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/events', label: isStudent ? 'Events & Lectures' : 'Campus Events', icon: CalendarDays },
     { to: '/resources', label: 'Resources', icon: Box },
-    {
-      to: isStaff ? '/bookings/all' : '/bookings/mine',
-      label: isStaff ? 'All Bookings' : 'My Bookings',
-      icon: CalendarCheck,
-    },
+    ...(isStaff
+      ? [{ to: '/bookings/all', label: 'All Bookings', icon: CalendarCheck }]
+      : isFaculty
+      ? [{ to: '/bookings/mine', label: 'My Bookings', icon: CalendarCheck }]
+      : []),
     {
       to: isStaff ? '/issues/all' : '/issues/mine',
       label: isStaff ? 'Issue Triage' : 'My Issues',

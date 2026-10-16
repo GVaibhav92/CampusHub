@@ -33,10 +33,39 @@ export interface Booking {
   TenantID: string
   ResourceID: string
   UserID: string
+  Title: string
+  CourseCode?: string
   StartTime: string
   EndTime: string
   Status: BookingStatus
   CreatedAt: string
+}
+
+export type EnrollmentStatus = 'ENROLLED' | 'CANCELLED_BY_STUDENT' | 'CANCELLED_BY_FACULTY'
+
+export interface EventSession {
+  id: string
+  tenant_id: string
+  resource_id: string
+  resource_name: string
+  resource_location: string
+  capacity: number
+  faculty_id: string
+  faculty_email: string
+  title: string
+  course_code?: string
+  start_time: string
+  end_time: string
+  status: string
+  active_enrolled: number
+  is_enrolled: boolean
+}
+
+export interface RosterStudent {
+  student_id: string
+  email: string
+  status: EnrollmentStatus
+  enrolled_at: string
 }
 
 export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'

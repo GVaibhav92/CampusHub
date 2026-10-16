@@ -19,6 +19,8 @@ export const CreateBooking: React.FC = () => {
   const { resources, getResourceById, isLoading: isLoadingResources } = useResources()
 
   const [resourceId, setResourceId] = useState(initialResourceId)
+  const [title, setTitle] = useState('')
+  const [courseCode, setCourseCode] = useState('')
   const [bookingDate, setBookingDate] = useState(() => {
     const today = new Date()
     return today.toISOString().split('T')[0]
@@ -46,6 +48,11 @@ export const CreateBooking: React.FC = () => {
     e.preventDefault()
     setError(null)
     setSuccess(false)
+
+    if (!title.trim()) {
+      setError('Please provide an event or session title (e.g. Guest Lecture).')
+      return
+    }
 
     if (!resourceId) {
       setError('Please select a facility resource.')
@@ -76,6 +83,8 @@ export const CreateBooking: React.FC = () => {
     try {
       await createBooking({
         resource_id: resourceId,
+        title: title.trim(),
+        course_code: courseCode.trim() || undefined,
         start_time: startIso,
         end_time: endIso,
       })
@@ -137,10 +146,39 @@ export const CreateBooking: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Event / Session Title */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Event / Session Title <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Guest Lecture: AI Systems, Operating Systems Lab"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+            />
+          </div>
+
+          {/* Optional Course Code */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Course Code <span className="text-slate-400 font-normal lowercase">(optional)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. CS501, BIO204"
+              value={courseCode}
+              onChange={(e) => setCourseCode(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+            />
+          </div>
+
           {/* Resource Selector */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Select Facility Resource
+              Select Facility Resource <span className="text-rose-500">*</span>
             </label>
             {isLoadingResources ? (
               <div className="flex items-center gap-2 text-xs text-slate-400 py-2">

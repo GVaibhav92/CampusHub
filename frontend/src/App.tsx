@@ -12,6 +12,7 @@ import { Resources } from './pages/Resources'
 import { ResourceDetails } from './pages/ResourceDetails'
 import { Bookings } from './pages/Bookings'
 import { CreateBooking } from './pages/CreateBooking'
+import { Events } from './pages/Events'
 import { RoleRoute } from './routes/RoleRoute'
 import { Issues } from './pages/Issues'
 import { CreateIssue } from './pages/CreateIssue'
@@ -50,11 +51,19 @@ export default function App() {
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/events" element={<Events />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/resources/:id" element={<ResourceDetails />} />
             <Route path="/bookings/mine" element={<Bookings isAll={false} />} />
             <Route path="/bookings/all" element={<Bookings isAll={true} />} />
-            <Route path="/bookings/create" element={<CreateBooking />} />
+            <Route
+              path="/bookings/create"
+              element={
+                <RoleRoute allowedRoles={['FACULTY', 'ADMIN']}>
+                  <CreateBooking />
+                </RoleRoute>
+              }
+            />
             <Route path="/issues/mine" element={<Issues isAll={false} />} />
             <Route path="/issues/all" element={<Issues isAll={true} />} />
             <Route path="/issues/create" element={<CreateIssue />} />

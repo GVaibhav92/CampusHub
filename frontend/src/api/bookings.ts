@@ -3,6 +3,8 @@ import type { Booking } from '../types'
 
 export interface CreateBookingPayload {
   resource_id: string
+  title: string
+  course_code?: string
   start_time: string // ISO-8601
   end_time: string   // ISO-8601
 }

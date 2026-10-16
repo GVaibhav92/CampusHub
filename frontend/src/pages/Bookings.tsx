@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { EmptyState } from '../components/common/EmptyState'
 import { ErrorState } from '../components/common/ErrorState'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
+import { EventRosterModal } from '../components/roster/EventRosterModal'
 import { formatDateTime } from '../lib/utils'
 import type { Booking } from '../types'
 import {
@@ -16,6 +17,7 @@ import {
   XCircle,
   Building,
   Clock,
+  Users,
 } from 'lucide-react'
 
 interface BookingsProps {
@@ -29,6 +31,7 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'CANCELLED'>('ALL')
 
+  const [rosterBooking, setRosterBooking] = useState<Booking | null>(null)
   const [cancelingBooking, setCancelingBooking] = useState<Booking | null>(null)
   const [isCanceling, setIsCanceling] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -37,7 +40,13 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
     return bookings.filter((b) => {
       const resource = getResourceById(b.ResourceID)
       const resName = resource?.Name.toLowerCase() || ''
-      const matchesSearch = resName.includes(searchTerm.toLowerCase()) || b.ID.includes(searchTerm)
+      const title = (b.Title || '').toLowerCase()
+      const course = (b.CourseCode || '').toLowerCase()
+      const matchesSearch =
+        resName.includes(searchTerm.toLowerCase()) ||
+        title.includes(searchTerm.toLowerCase()) ||
+        course.includes(searchTerm.toLowerCase()) ||
+        b.ID.includes(searchTerm)
       const matchesStatus = statusFilter === 'ALL' || b.Status === statusFilter
       return matchesSearch && matchesStatus
     })
@@ -157,6 +166,7 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3.5 px-6">Event / Session</th>
                   <th className="py-3.5 px-6">Facility</th>
                   <th className="py-3.5 px-6">Start Time</th>
                   <th className="py-3.5 px-6">End Time</th>
@@ -174,10 +184,23 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
                   return (
                     <tr key={b.ID} className="hover:bg-slate-50/50 transition">
                       <td className="py-4 px-6 font-medium text-slate-900">
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-slate-900 block">
+                            {b.Title || 'Academic Session'}
+                          </span>
+                          {b.CourseCode && (
+                            <span className="inline-flex text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                              {b.CourseCode}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6 font-medium text-slate-700">
                         <div className="flex items-center gap-2.5">
                           <Building className="w-4 h-4 text-indigo-600 shrink-0" />
                           <div>
-                            <span className="font-semibold block">
+                            <span className="font-semibold block text-slate-900">
                               {resource?.Name || 'Facility'}
                             </span>
                             <span className="text-xs text-slate-400 font-mono">
@@ -211,7 +234,17 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
                         </td>
                       )}
 
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right space-x-1.5">
+                        {b.Status === 'CONFIRMED' && (
+                          <button
+                            onClick={() => setRosterBooking(b)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg transition"
+                            title="View student attendee roster"
+                          >
+                            <Users className="w-3.5 h-3.5" />
+                            Roster
+                          </button>
+                        )}
                         {canCancel && (
                           <button
                             onClick={() => setCancelingBooking(b)}
@@ -229,6 +262,17 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Event Attendee Roster Modal */}
+      {rosterBooking && (
+        <EventRosterModal
+          isOpen={!!rosterBooking}
+          onClose={() => setRosterBooking(null)}
+          bookingId={rosterBooking.ID}
+          bookingTitle={rosterBooking.Title || 'Academic Session'}
+          capacity={getResourceById(rosterBooking.ResourceID)?.Capacity || 0}
+        />
       )}
 
       {/* Cancel Confirmation Dialog */}

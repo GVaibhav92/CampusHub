@@ -214,19 +214,21 @@ export const ResourceDetails: React.FC = () => {
 
           {/* Quick Actions Card */}
           <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-4">
-            <Link
-              to={`/bookings/create?resource_id=${resource.ID}`}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-xs transition ${
-                resource.Status === 'MAINTENANCE'
-                  ? 'bg-slate-400 cursor-not-allowed pointer-events-none'
-                  : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
-            >
-              <CalendarPlus className="w-4 h-4" />
-              {resource.Status === 'MAINTENANCE'
-                ? 'Under Maintenance'
-                : 'Reserve this Resource'}
-            </Link>
+            {user?.role !== 'STUDENT' && (
+              <Link
+                to={`/bookings/create?resource_id=${resource.ID}`}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-xs transition ${
+                  resource.Status === 'MAINTENANCE'
+                    ? 'bg-slate-400 cursor-not-allowed pointer-events-none'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                <CalendarPlus className="w-4 h-4" />
+                {resource.Status === 'MAINTENANCE'
+                  ? 'Under Maintenance'
+                  : 'Reserve this Resource'}
+              </Link>
+            )}
 
             <Link
               to={`/issues/create?resource_id=${resource.ID}`}
