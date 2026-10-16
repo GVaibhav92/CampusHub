@@ -14,12 +14,14 @@ const (
 )
 
 type Booking struct {
-	ID         uuid.UUID
-	TenantID   uuid.UUID
-	ResourceID uuid.UUID
-	UserID     uuid.UUID
-	StartTime  time.Time
-	EndTime    time.Time
-	Status     BookingStatus
-	CreatedAt  time.Time
+	ID         uuid.UUID  `json:"id"`
+	TenantID   uuid.UUID  `json:"tenant_id"`
+	ResourceID uuid.UUID  `json:"resource_id"`
+	UserID     uuid.UUID  `json:"user_id"`
+	Title      string     `json:"title"`
+	CourseCode *string    `json:"course_code,omitempty"`
+	StartTime  time.Time  `json:"start_time"`
+	EndTime    time.Time  `json:"end_time"`
+	Status     BookingStatus `json:"status"`
+	CreatedAt  time.Time  `json:"created_at"`
 }

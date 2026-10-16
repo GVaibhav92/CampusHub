@@ -19,6 +19,7 @@ var (
 	ErrResourceNotFound    = errors.New("resource not found")
 	ErrResourceUnavailable = errors.New("resource is under maintenance")
 	ErrInvalidTimeRange    = errors.New("end time must be after start time")
+	ErrInvalidTitle        = errors.New("title is required")
 	ErrForbidden           = errors.New("not permitted to cancel this booking")
 )
 
@@ -35,7 +36,10 @@ func NewBookingService(db *sql.DB, bookings repository.BookingRepository, resour
 	return &BookingService{db: db, bookings: bookings, resources: resources, publisher: publisher, logger: logger}
 }
 
-func (s *BookingService) CreateBooking(ctx context.Context, tenantID, userID, resourceID uuid.UUID, start, end time.Time) (*domain.Booking, error) {
+func (s *BookingService) CreateBooking(ctx context.Context, tenantID, userID, resourceID uuid.UUID, title string, courseCode *string, start, end time.Time) (*domain.Booking, error) {
+	if len(title) == 0 {
+		return nil, ErrInvalidTitle
+	}
 	if !end.After(start) {
 		return nil, ErrInvalidTimeRange
 	}
@@ -59,6 +63,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, tenantID, userID, re
 
 	booking := &domain.Booking{
 		ID: uuid.New(), TenantID: tenantID, ResourceID: resourceID, UserID: userID,
+		Title: title, CourseCode: courseCode,
 		StartTime: start, EndTime: end, Status: domain.BookingConfirmed,
 	}
 

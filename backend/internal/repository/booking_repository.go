@@ -36,10 +36,10 @@ func NewBookingRepository(db *sql.DB) BookingRepository {
 
 func (r *bookingRepository) Create(ctx context.Context, tx *sql.Tx, b *domain.Booking) error {
 	query := `
-		INSERT INTO bookings (id, tenant_id, resource_id, user_id, start_time, end_time, status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+		INSERT INTO bookings (id, tenant_id, resource_id, user_id, title, course_code, start_time, end_time, status, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
 		RETURNING created_at`
-	err := tx.QueryRowContext(ctx, query, b.ID, b.TenantID, b.ResourceID, b.UserID, b.StartTime, b.EndTime, b.Status).Scan(&b.CreatedAt)
+	err := tx.QueryRowContext(ctx, query, b.ID, b.TenantID, b.ResourceID, b.UserID, b.Title, b.CourseCode, b.StartTime, b.EndTime, b.Status).Scan(&b.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == exclusionViolationCode {
@@ -52,10 +52,10 @@ func (r *bookingRepository) Create(ctx context.Context, tx *sql.Tx, b *domain.Bo
 
 func (r *bookingRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID) (*domain.Booking, error) {
 	var b domain.Booking
-	query := `SELECT id, tenant_id, resource_id, user_id, start_time, end_time, status, created_at
+	query := `SELECT id, tenant_id, resource_id, user_id, title, course_code, start_time, end_time, status, created_at
 	          FROM bookings WHERE tenant_id = $1 AND id = $2`
 	err := r.db.QueryRowContext(ctx, query, tenantID, id).Scan(
-		&b.ID, &b.TenantID, &b.ResourceID, &b.UserID, &b.StartTime, &b.EndTime, &b.Status, &b.CreatedAt)
+		&b.ID, &b.TenantID, &b.ResourceID, &b.UserID, &b.Title, &b.CourseCode, &b.StartTime, &b.EndTime, &b.Status, &b.CreatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -66,12 +66,12 @@ func (r *bookingRepository) GetByID(ctx context.Context, tenantID, id uuid.UUID)
 }
 
 func (r *bookingRepository) ListByTenant(ctx context.Context, tenantID uuid.UUID) ([]domain.Booking, error) {
-	return r.list(ctx, `SELECT id, tenant_id, resource_id, user_id, start_time, end_time, status, created_at
+	return r.list(ctx, `SELECT id, tenant_id, resource_id, user_id, title, course_code, start_time, end_time, status, created_at
 	                     FROM bookings WHERE tenant_id = $1 ORDER BY start_time DESC`, tenantID)
 }
 
 func (r *bookingRepository) ListByUser(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Booking, error) {
-	return r.list(ctx, `SELECT id, tenant_id, resource_id, user_id, start_time, end_time, status, created_at
+	return r.list(ctx, `SELECT id, tenant_id, resource_id, user_id, title, course_code, start_time, end_time, status, created_at
 	                     FROM bookings WHERE tenant_id = $1 AND user_id = $2 ORDER BY start_time DESC`, tenantID, userID)
 }
 
@@ -85,7 +85,7 @@ func (r *bookingRepository) list(ctx context.Context, query string, args ...any)
 	var bookings []domain.Booking
 	for rows.Next() {
 		var b domain.Booking
-		if err := rows.Scan(&b.ID, &b.TenantID, &b.ResourceID, &b.UserID, &b.StartTime, &b.EndTime, &b.Status, &b.CreatedAt); err != nil {
+		if err := rows.Scan(&b.ID, &b.TenantID, &b.ResourceID, &b.UserID, &b.Title, &b.CourseCode, &b.StartTime, &b.EndTime, &b.Status, &b.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scanning booking: %w", err)
 		}
 		bookings = append(bookings, b)

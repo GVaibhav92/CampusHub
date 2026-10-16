@@ -25,6 +25,8 @@ func NewBookingHandler(bookingService *service.BookingService, bookings reposito
 
 type createBookingRequest struct {
 	ResourceID string    `json:"resource_id" binding:"required"`
+	Title      string    `json:"title" binding:"required"`
+	CourseCode *string   `json:"course_code"`
 	StartTime  time.Time `json:"start_time" binding:"required"`
 	EndTime    time.Time `json:"end_time" binding:"required"`
 }
@@ -51,7 +53,7 @@ func (h *BookingHandler) Create(c *gin.Context) {
 		return
 	}
 
-	booking, err := h.bookingService.CreateBooking(c.Request.Context(), tenantID, userID, resourceID, req.StartTime, req.EndTime)
+	booking, err := h.bookingService.CreateBooking(c.Request.Context(), tenantID, userID, resourceID, req.Title, req.CourseCode, req.StartTime, req.EndTime)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrBookingConflict):
@@ -61,6 +63,8 @@ func (h *BookingHandler) Create(c *gin.Context) {
 		case errors.Is(err, service.ErrResourceUnavailable):
 			c.JSON(http.StatusConflict, gin.H{"error": "resource is unavailable"})
 		case errors.Is(err, service.ErrInvalidTimeRange):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, service.ErrInvalidTitle):
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create booking"})

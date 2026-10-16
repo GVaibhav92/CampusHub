@@ -42,7 +42,7 @@ func TestBookingOwnershipAndTenantIsolation(t *testing.T) {
 	must(t, resourceRepo.Create(ctx, resource))
 
 	start := time.Now().Add(48 * time.Hour).Truncate(time.Hour)
-	booking, err := bookingSvc.CreateBooking(ctx, tenantA.ID, owner.ID, resource.ID, start, start.Add(time.Hour))
+	booking, err := bookingSvc.CreateBooking(ctx, tenantA.ID, owner.ID, resource.ID, "Physics Lab", nil, start, start.Add(time.Hour))
 	must(t, err)
 
 	// Different student, same tenant, not the owner -> forbidden
