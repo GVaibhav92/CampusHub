@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"campushub/backend/internal/domain"
 	"campushub/backend/internal/middleware"
 	"campushub/backend/internal/repository"
 	"campushub/backend/internal/service"
@@ -84,6 +85,9 @@ func (h *BookingHandler) ListMine(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list bookings"})
 		return
 	}
+	if bookings == nil {
+		bookings = []domain.Booking{}
+	}
 	c.JSON(http.StatusOK, bookings)
 }
 
@@ -94,6 +98,9 @@ func (h *BookingHandler) ListAll(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list bookings"})
 		return
+	}
+	if bookings == nil {
+		bookings = []domain.Booking{}
 	}
 	c.JSON(http.StatusOK, bookings)
 }
