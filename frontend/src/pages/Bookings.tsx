@@ -37,27 +37,37 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
   const [actionError, setActionError] = useState<string | null>(null)
 
   const filteredBookings = useMemo(() => {
+    if (!Array.isArray(bookings)) return []
     return bookings.filter((b) => {
-      const resource = getResourceById(b.ResourceID)
-      const resName = resource?.Name.toLowerCase() || ''
-      const title = (b.Title || '').toLowerCase()
-      const course = (b.CourseCode || '').toLowerCase()
+      if (!b) return false
+      const resourceId = b.ResourceID || (b as any).resource_id || ''
+      const resource = getResourceById(resourceId)
+      const resName = (resource?.Name || '').toLowerCase()
+      const title = (b.Title || (b as any).title || '').toLowerCase()
+      const course = (b.CourseCode || (b as any).course_code || '').toLowerCase()
+      const id = (b.ID || (b as any).id || '').toLowerCase()
+      const status = (b.Status || (b as any).status || '').toUpperCase()
+
+      const term = searchTerm.toLowerCase().trim()
       const matchesSearch =
-        resName.includes(searchTerm.toLowerCase()) ||
-        title.includes(searchTerm.toLowerCase()) ||
-        course.includes(searchTerm.toLowerCase()) ||
-        b.ID.includes(searchTerm)
-      const matchesStatus = statusFilter === 'ALL' || b.Status === statusFilter
+        !term ||
+        resName.includes(term) ||
+        title.includes(term) ||
+        course.includes(term) ||
+        id.includes(term)
+
+      const matchesStatus = statusFilter === 'ALL' || status === statusFilter
       return matchesSearch && matchesStatus
     })
   }, [bookings, searchTerm, statusFilter, getResourceById])
 
   const handleCancelConfirm = async () => {
-    if (!cancelingBooking) return
+    const bookingId = cancelingBooking?.ID || (cancelingBooking as any)?.id
+    if (!bookingId) return
     setIsCanceling(true)
     setActionError(null)
     try {
-      await cancelBooking(cancelingBooking.ID)
+      await cancelBooking(bookingId)
       setCancelingBooking(null)
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -177,20 +187,28 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBookings.map((b) => {
-                  const resource = getResourceById(b.ResourceID)
-                  const isPast = new Date(b.EndTime) < new Date()
-                  const canCancel = b.Status === 'CONFIRMED' && !isPast
+                  const id = b.ID || (b as any).id || ''
+                  const resourceId = b.ResourceID || (b as any).resource_id || ''
+                  const resource = getResourceById(resourceId)
+                  const title = b.Title || (b as any).title || 'Academic Session'
+                  const courseCode = b.CourseCode || (b as any).course_code
+                  const startTime = b.StartTime || (b as any).start_time || ''
+                  const endTime = b.EndTime || (b as any).end_time || ''
+                  const status = (b.Status || (b as any).status || 'CONFIRMED') as any
+                  const userId = b.UserID || (b as any).user_id || ''
+                  const isPast = endTime ? new Date(endTime) < new Date() : false
+                  const canCancel = status === 'CONFIRMED' && !isPast
 
                   return (
-                    <tr key={b.ID} className="hover:bg-slate-50/50 transition">
+                    <tr key={id || Math.random().toString()} className="hover:bg-slate-50/50 transition">
                       <td className="py-4 px-6 font-medium text-slate-900">
                         <div className="space-y-0.5">
                           <span className="font-semibold text-slate-900 block">
-                            {b.Title || 'Academic Session'}
+                            {title}
                           </span>
-                          {b.CourseCode && (
+                          {courseCode && (
                             <span className="inline-flex text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
-                              {b.CourseCode}
+                              {courseCode}
                             </span>
                           )}
                         </div>
@@ -204,7 +222,7 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
                               {resource?.Name || 'Facility'}
                             </span>
                             <span className="text-xs text-slate-400 font-mono">
-                              {resource ? `${resource.Type} · ${resource.Location}` : b.ResourceID.slice(0, 8)}
+                              {resource ? `${resource.Type} · ${resource.Location}` : (resourceId ? resourceId.slice(0, 8) : '—')}
                             </span>
                           </div>
                         </div>
@@ -213,29 +231,29 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
                       <td className="py-4 px-6 text-slate-600">
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{formatDateTime(b.StartTime)}</span>
+                          <span>{startTime ? formatDateTime(startTime) : '—'}</span>
                         </div>
                       </td>
 
                       <td className="py-4 px-6 text-slate-600">
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{formatDateTime(b.EndTime)}</span>
+                          <span>{endTime ? formatDateTime(endTime) : '—'}</span>
                         </div>
                       </td>
 
                       <td className="py-4 px-6">
-                        <StatusBadge status={b.Status} />
+                        <StatusBadge status={status} />
                       </td>
 
                       {isAll && (
                         <td className="py-4 px-6 text-xs text-slate-500 font-mono">
-                          {b.UserID.slice(0, 8)}...
+                          {userId ? `${userId.slice(0, 8)}...` : '—'}
                         </td>
                       )}
 
                       <td className="py-4 px-6 text-right space-x-1.5">
-                        {b.Status === 'CONFIRMED' && (
+                        {status === 'CONFIRMED' && (
                           <button
                             onClick={() => setRosterBooking(b)}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg transition"
@@ -269,9 +287,9 @@ export const Bookings: React.FC<BookingsProps> = ({ isAll = false }) => {
         <EventRosterModal
           isOpen={!!rosterBooking}
           onClose={() => setRosterBooking(null)}
-          bookingId={rosterBooking.ID}
-          bookingTitle={rosterBooking.Title || 'Academic Session'}
-          capacity={getResourceById(rosterBooking.ResourceID)?.Capacity || 0}
+          bookingId={rosterBooking.ID || (rosterBooking as any).id || ''}
+          bookingTitle={rosterBooking.Title || (rosterBooking as any).title || 'Academic Session'}
+          capacity={getResourceById(rosterBooking.ResourceID || (rosterBooking as any).resource_id || '')?.Capacity || 0}
         />
       )}
 

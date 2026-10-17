@@ -297,17 +297,24 @@ export const Dashboard: React.FC = () => {
           ) : (
             <div className="divide-y divide-slate-100 space-y-1">
               {upcomingBookings.map((b) => {
-                const resource = getResourceById(b.ResourceID)
+                const id = b.ID || (b as any).id || ''
+                const resourceId = b.ResourceID || (b as any).resource_id || ''
+                const resource = getResourceById(resourceId)
+                const title = b.Title || (b as any).title || resource?.Name || 'Facility'
+                const courseCode = b.CourseCode || (b as any).course_code
+                const startTime = b.StartTime || (b as any).start_time || ''
+                const status = (b.Status || (b as any).status || 'CONFIRMED') as any
+
                 return (
-                  <div key={b.ID} className="py-3 flex items-center justify-between">
+                  <div key={id || Math.random().toString()} className="py-3 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-semibold text-slate-800">
-                          {b.Title || resource?.Name || 'Facility'}
+                          {title}
                         </h4>
-                        {b.CourseCode && (
+                        {courseCode && (
                           <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                            {b.CourseCode}
+                            {courseCode}
                           </span>
                         )}
                       </div>
@@ -318,10 +325,10 @@ export const Dashboard: React.FC = () => {
                         </span>
                         <span className="mx-1">&middot;</span>
                         <Clock className="w-3 h-3 text-slate-400" />
-                        <span>{formatDateTime(b.StartTime)}</span>
+                        <span>{startTime ? formatDateTime(startTime) : '—'}</span>
                       </p>
                     </div>
-                    <StatusBadge status={b.Status} />
+                    <StatusBadge status={status} />
                   </div>
                 )
               })}
